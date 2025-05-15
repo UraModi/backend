@@ -1,23 +1,31 @@
+# app.py
 from flask import Flask, request, jsonify
-from flask_restful import Api, Resource
-from langchain.embeddings import OpenAIEmbeddings
-from langchain.vectorstores import FAISS
+from flask_cors import CORS
 
 app = Flask(__name__)
-api = Api(app)
+CORS(app)  # Enable CORS for all routes
 
-# Load the stored FAISS index
-embeddings = OpenAIEmbeddings()
-vector_db = FAISS.load_local("faiss_index", embeddings)
+@app.route("/")
+def home():
+    return "Music Metadata API is running."
 
-class Chatbot(Resource):
-    def post(self):
-        user_input = request.json["message"]
-        results = vector_db.similarity_search(user_input, k=3)
-        response = [doc.page_content for doc in results]
-        return jsonify({"response": response})
+@app.route("/submit", methods=["POST"])
+def submit_composition():
+    data = request.json
 
-api.add_resource(Chatbot, "/chat")
+    required_fields = [
+        "title", "artist_name", "genre", "isrc_code", "composer_details"
+    ]
+    missing = [field for field in required_fields if not data.get(field)]
+
+    if missing:
+        return jsonify({"status": "error", "message": f"Missing fields: {', '.join(missing)}"}), 400
+
+    # Simulate saving to DB (print to logs)
+    print("Received Composition Data:")
+    print(data)
+
+    return jsonify({"status": "success", "message": "Composition submitted successfully."})
 
 if __name__ == "__main__":
     app.run(debug=True)
